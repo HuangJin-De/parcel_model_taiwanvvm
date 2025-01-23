@@ -30,8 +30,9 @@ call mpi_comm_rank(mpi_comm_world,myid,ierr)
 allocate(mpi_s(nproc),mpi_n(nproc))
 
 path="/data/der0318/taiwanVVM/"
-workpath="/data/der0318/parcel_model/"
-run="tpe20110816nor"
+workpath="/data/der0318/parcel_model_taiwanvvm/"
+run="runname"
+!run="tpe20110816nor"
 
 idum2=nt/nproc
 ts=idum2*myid+1
@@ -186,7 +187,7 @@ do k=1,nz
     !write(*,*) k, dum1,dum2
   enddo
   tdm(k,tt) = dum2 - 273.15
-  pm(k,tt) = pbar(k) 
+  pm(k,tt) = pbar(k) / 100. 
 
   wsm(k,tt) = sqrt(um(k)**2. + vm(k)**2.)
   dum1 = atan2(um(k),vm(k))/3.14159265*180.
@@ -204,7 +205,7 @@ if (myid==0) then
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,tm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,tdm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,wsm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
-  call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,tm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
+  call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,wdm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,pm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
 else
   call mpi_gatherv(tm,mpi_n(myid+1)*nz,mpi_real,tm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)

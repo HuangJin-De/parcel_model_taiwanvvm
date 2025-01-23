@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-path=/data/der0318/parcel_model/taiwanVVM/
+path=/data/der0318/parcel_model_taiwanvvm/taiwanVVM/
 
 export list=$(ls $path)
 

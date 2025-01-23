@@ -30,7 +30,7 @@ call mpi_comm_rank(mpi_comm_world,myid,ierr)
 allocate(mpi_s(nproc),mpi_n(nproc))
 
 path="/data/der0318/taiwanVVM/"
-workpath="/data/der0318/parcel_model/"
+workpath="/data/der0318/parcel_model_taiwanvvm/"
 run="runname"
 
 idum2=nt/nproc

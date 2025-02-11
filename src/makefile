@@ -14,10 +14,10 @@ LDLIBS = -L/opt/libs-intel-oneapi/netcdf-4.7.4/lib -lnetcdff
 #
 ## objects
 #
-#LIST = cal_pblh.F cal_cape.F
-#a.out: cal_pblh.o cal_cape.o
-#cal_pblh.o: cal_pblh.F cal_cape.o
-#cal_cape.o: cal_cape.F 
+LIST = cal_pblh.F cal_cape.F
+a.out: cal_pblh.o cal_cape.o
+cal_pblh.o: cal_pblh.F cal_cape.o
+cal_cape.o: cal_cape.F 
 #
 #LIST_o = $(LIST:.f=.o)
 #target = a.out 
@@ -27,9 +27,9 @@ VPATH = ./
 
 # objects
 
-LIST = cal_mean.F
-a.out: cal_mean.o
-cal_mean.o: cal_mean.F
+#LIST = cal_mean.F
+#a.out: cal_mean.o
+#cal_mean.o: cal_mean.F
 
 LIST_o = $(LIST:.F=.o)
 target = a.out 
@@ -47,6 +47,6 @@ $(target) : $(LIST_o)
 	$(FC) $(FCFLAGS) $(FINCLUDE) $^ -o $@ $(LDLIBS)
 
 clean:
-	rm -rf *.o *.mod ace_model.exe
+	rm -rf *.o *.mod a.out
 
 

@@ -10,7 +10,9 @@ do
   #sed -e 's/runname/'$fname'/g' src/cal_cape.F > cal_cape.f
   #sed -e 's/runname/'$fname'/g' src/cal_pblh.F > cal_pblh.f
   
-  sed -e 's/runname/'$fname'/g' src/cal_mean.F > cal_mean.f
+  #sed -e 's/runname/'$fname'/g' src/cal_mean.F > cal_mean.f
+
+  sed -e 's/runname/'$fname'/g' src/cal_wpdf.F > cal_wpdf.f
 
   make
 

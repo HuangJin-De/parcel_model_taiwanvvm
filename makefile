@@ -33,14 +33,16 @@ VPATH = ./
 #cal_cape.o: cal_cape.f
 
 
-LIST = cal_mean.f
-a.out: cal_mean.o
-cal_mean.o: cal_mean.f
+#LIST = cal_mean.f
+#a.out: cal_mean.o
+#cal_mean.o: cal_mean.f
 
+LIST = cal_wpdf.f
+a.out: cal_wpdf.o
+cal_mean.o: cal_wpdf.f
 
 LIST_o = $(LIST:.f=.o)
 target = a.out 
-
 
 all: $(target)
 
@@ -54,6 +56,6 @@ $(target) : $(LIST_o)
 	$(FC) $(FCFLAGS) $(FINCLUDE) $^ -o $@ $(LDLIBS)
 
 clean:
-	rm -rf *.o *.mod ace_model.exe
+	rm -rf *.o *.mod a.out
 
 

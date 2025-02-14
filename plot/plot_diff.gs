@@ -18,8 +18,7 @@
 
 path="/data/der0318/taiwanVVM/"
 
-nrun=9
-*40
+nrun=40
 run.1='tpe20050702nor'
 run.2='tpe20050712nor'
 run.3='tpe20050723nor'

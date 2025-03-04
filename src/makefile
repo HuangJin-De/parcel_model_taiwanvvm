@@ -14,10 +14,10 @@ LDLIBS = -L/opt/libs-intel-oneapi/netcdf-4.7.4/lib -lnetcdff
 #
 ## objects
 #
-LIST = cal_pblh.F cal_cape.F
-a.out: cal_pblh.o cal_cape.o
-cal_pblh.o: cal_pblh.F cal_cape.o
-cal_cape.o: cal_cape.F 
+#LIST = cal_pblh.F cal_cape.F
+#a.out: cal_pblh.o cal_cape.o
+#cal_pblh.o: cal_pblh.F cal_cape.o
+#cal_cape.o: cal_cape.F 
 #
 #LIST_o = $(LIST:.f=.o)
 #target = a.out 
@@ -30,6 +30,11 @@ VPATH = ./
 #LIST = cal_mean.F
 #a.out: cal_mean.o
 #cal_mean.o: cal_mean.F
+
+LIST = cal_cape.F cal_cape_land.F
+a.out: cal_cape_land.o cal_cape.o
+cal_mean_land.o: cal_cape_land.F cal_cape.o
+cal_cape.o: cal_cape.F 
 
 LIST_o = $(LIST:.F=.o)
 target = a.out 

@@ -1,9 +1,6 @@
 Module cal_cape
 IMPLICIT NONE
 
-private
-public :: lift_parcel_adiabatic
-
 REAL*8, PARAMETER    :: alpha=0.5,& 
                         sigma=1.,&  
                         k2=0.18,&  

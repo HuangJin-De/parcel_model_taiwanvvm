@@ -10,7 +10,10 @@ do
   cp template/pblh.ctl gs_ctl/pblh_$fname.ctl
   sed -i 's/runname/'$fname'/g' gs_ctl/pblh_$fname.ctl
 
-  cp template/wpdf.ctl gs_ctl/wpdf_$fname.ctl
-  sed -i 's/runname/'$fname'/g' gs_ctl/wpdf_$fname.ctl
+  cp template/mean.ctl gs_ctl/mean_$fname.ctl
+  sed -i 's/runname/'$fname'/g' gs_ctl/mean_$fname.ctl
+
+  #cp template/wpdf.ctl gs_ctl/wpdf_$fname.ctl
+  #sed -i 's/runname/'$fname'/g' gs_ctl/wpdf_$fname.ctl
 done
 

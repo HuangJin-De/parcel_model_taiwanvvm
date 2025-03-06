@@ -27,14 +27,15 @@ VPATH = ./
 
 # objects
 
-#LIST = cal_mean.F
-#a.out: cal_mean.o
-#cal_mean.o: cal_mean.F
+LIST = cal_cape.F cal_mean.F 
+a.out: cal_mean.o cal_cape.o
+cal_mean.o: cal_mean.F cal_cape.o
+cal_cape.o: cal_cape.F
 
-LIST = cal_cape.F cal_cape_land.F
-a.out: cal_cape_land.o cal_cape.o
-cal_mean_land.o: cal_cape_land.F cal_cape.o
-cal_cape.o: cal_cape.F 
+#LIST = cal_cape.F cal_cape_land.F
+#a.out: cal_cape_land.o cal_cape.o
+#cal_mean_land.o: cal_cape_land.F cal_cape.o
+#cal_cape.o: cal_cape.F 
 
 LIST_o = $(LIST:.F=.o)
 target = a.out 

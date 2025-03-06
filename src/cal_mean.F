@@ -1,4 +1,5 @@
 program cal_mean
+use cal_cape
 use netcdf
 use mpi
 implicit none
@@ -10,17 +11,20 @@ integer :: ierr, ncid1, varid1
 integer :: myid,nproc,ts,te,tt
 integer :: idum1,idum2
 integer :: is,ie,js,je,ks,ke
+integer :: k1,lfc,el
 integer, dimension(:), allocatable :: mpi_s,mpi_n
+real :: vsr,ncape,fork, term1, term2, term3, term4, term5,&
+        term6, term7,duma,dumb,dumc,dumd,et,nncape,v2, ent, dume
 real :: qv_sat
 real :: dum1,dum2,dum3,dum4,dum5
 real, dimension(nx,ny,nz) :: th,qv,u,v
 real, dimension(nz) :: thm,qvm,um,vm,np
-real*4, dimension(:,:), allocatable :: tm,tdm,wsm,wdm,pm
+real*4, dimension(:,:), allocatable :: tm,tdm,rh,wsm,wdm,pm,cape
 real, dimension(nz+1) :: zz,zc,rho,rhoz,thbar,thvbar,pbar,pibar,q1,q2
+real, dimension(:), allocatable :: t0,q0,p0,z0,h0,hs0,h0h,ht,buoc
 real, dimension(nz) :: dz
-real, dimension(:), allocatable :: t0,q0,p0,z0, buoc
 real :: start, finish
-integer, dimension(nx,ny) :: topo
+integer, dimension(nx,ny) :: topo,lu
 character(200) :: path,run,filename,workpath
 
 call mpi_init(ierr)
@@ -29,7 +33,7 @@ call mpi_comm_rank(mpi_comm_world,myid,ierr)
 
 allocate(mpi_s(nproc),mpi_n(nproc))
 
-path="/data/der0318/taiwanVVM/"
+path="/data2/VVM/taiwanvvm_tpe/"
 workpath="/data/der0318/parcel_model_taiwanvvm/"
 run="runname"
 !run="tpe20110816nor"
@@ -55,9 +59,10 @@ call mpi_allgather(idum2,1,mpi_int,mpi_n,1,mpi_int,mpi_comm_world,ierr)
 call mpi_allgather(ts,1,mpi_int,mpi_s,1,mpi_int,mpi_comm_world,ierr)
 
 if (myid==0) then
-  allocate(tm(nz,nt+1),tdm(nz,nt+1),wsm(nz,nt+1),wdm(nz,nt+1),pm(nz,nt+1))
+  allocate(tm(nz,nt+1),tdm(nz,nt+1),rh(nz,nt+1),wsm(nz,nt+1),wdm(nz,nt+1),pm(nz,nt+1),cape(3,nt+1))
 else
-  allocate(tm(nz,mpi_n(myid+1)),tdm(nz,mpi_n(myid+1)),wsm(nz,mpi_n(myid+1)),wdm(nz,mpi_n(myid+1)),pm(nz,mpi_n(myid+1)))
+  allocate(tm(nz,mpi_n(myid+1)),tdm(nz,mpi_n(myid+1)),rh(nz,mpi_n(myid+1)) & 
+          ,wsm(nz,mpi_n(myid+1)),wdm(nz,mpi_n(myid+1)),pm(nz,mpi_n(myid+1)),cape(3,mpi_n(myid+1)))
 endif
 
 !write(*,*) myid, ts, te, idum2
@@ -98,6 +103,8 @@ ENDDO
 CLOSE(10)
 
 call mpi_barrier(mpi_comm_world,ierr)
+
+cape=-999.
 
 do t=ts,te
   
@@ -145,6 +152,10 @@ ierr = nf90_inq_varid(ncid1,"topo",varid1)
 IF (ierr/=nf90_noerr) WRITE(*,*) "var_inq fail"
 ierr = nf90_get_var(ncid1,varid1,topo,start=(/ 1,1,1,1 /),count=(/ nx,ny,1,1 /))
 IF (ierr/=nf90_noerr) WRITE(*,*) "read fail"
+ierr = nf90_inq_varid(ncid1,"lu",varid1)
+IF (ierr/=nf90_noerr) WRITE(*,*) "var_inq fail"
+ierr = nf90_get_var(ncid1,varid1,lu,start=(/ 1,1,1,1 /),count=(/ nx,ny,1,1 /))
+IF (ierr/=nf90_noerr) WRITE(*,*) "read fail"
 ierr = nf90_close(ncid1)
 
 where(topo<1) topo=1 
@@ -156,6 +167,7 @@ vm=0.
 np=0.
 do j=1,ny
 do i=1,nx
+  if (lu(i,j)==16) goto 654
   do k=topo(i,j)+1,nz
     thm(k)=thm(k)+th(i,j,k)
     qvm(k)=qvm(k)+qv(i,j,k)
@@ -163,6 +175,7 @@ do i=1,nx
     vm(k)=vm(k)+v(i,j,k)
     np(k)=np(k)+1.
   enddo
+  654 continue
 enddo
 enddo
 thm=thm/np
@@ -171,23 +184,95 @@ um=um/np
 vm=vm/np
 
 
-do k=1,nz
-  tm(k,tt)=thm(k)*pibar(k)-273.15
-  
-  dum1 = 100.
-  dum2 = thm(k)*pibar(k)
-  dum3 = qvm(k)
-  do while (dum1>=5e-2)
-    i = 0
-    if (dum2<273.15) i = 1
-    dum4 = qv_sat(dum2,pbar(k),i) - dum3
-    !dum1 = abs(dum4) / dum3
-    dum1 = 0.7 * dum4 * 2.5e6 / 1004.5 
-    dum2 = dum2 - dum1
-    !write(*,*) k, dum1,dum2
+n=nz-1
+allocate(t0(n),q0(n),p0(n),z0(n),h0(n),hs0(n),h0h(n),ht(n),buoc(n))
+t0=thm(2:nz)*pibar(2:nz)
+q0=qvm(2:nz)
+p0=pbar(2:nz)
+z0=zc(2:nz)
+h0=cp*t0+g*z0+xlv*q0
+do k=1,n-1
+  hs0(k)=cp*t0(k)+g*z0(k)+xlv*qsat(t0(k),p0(k),0)
+enddo
+call lift_parcel_adiabatic(nz-1,t0,p0,q0,z0,buoc)
+
+lfc=0
+el=n-1
+lfc=findloc(buoc>0.,.True.,dim=1)
+el=findloc(buoc>0.,.True.,dim=1,back=.True.)
+if (lfc==0 .or. el==n-1) goto 744
+
+dum1=0.
+do k=lfc,el-1
+  if (buoc(k)>0. .and. buoc(k+1)>0.) then
+    dum1=dum1+0.5*(buoc(k+1)+buoc(k))*(z0(k+1)-z0(k))
+  endif
+enddo
+cape(1,tt)=dum1
+
+if (cape(1,tt)>0.) then
+  vsr=0.5*sqrt((um(46))**2.+(vm(46))**2)
+
+  h0h=0.
+  do k=lfc,el
+    do k1=1,k-1
+      h0h(k)=h0h(k)+0.5*(h0(k1)+h0(k1+1))*(z0(k1+1)-z0(k1))
+    enddo
+    h0h(k)=h0h(k)/z0(k)
+    ht(k)=g/cp*(h0h(k)-hs0(k))/t0(k)
   enddo
-  tdm(k,tt) = dum2 - 273.15
-  pm(k,tt) = pbar(k) / 100. 
+
+  ncape=0.
+  do k=lfc,el-1
+    ncape=ncape-0.5*(ht(k)+ht(k+1))*(z0(k+1)-z0(k))
+  enddo
+
+  fork=k2*alpha**2*pi**2*lmix/pr/sigma**2/(z0(el)-z0(lfc))/4.
+  term1=vsr**2/2.
+  term2=-1.-fork-2.*fork*ncape/vsr**2
+  term3=(1.+fork+2.*fork*ncape/vsr**2)**2
+  term4=8.*fork*(cape(1,tt)-fork*ncape)/vsr**2
+  term5=4.*fork/vsr**2
+  cape(2,tt)=term1+(term2+sqrt(term3+term4))/term5
+
+  v2=vsr**2/2./cape(1,tt)
+  nncape=ncape/cape(1,tt)
+  duma=-1.-fork-fork*nncape/v2
+  dumb=(1.+fork+fork*nncape/v2)**2
+  dumc=4.*fork*(1.-fork*nncape)/v2
+  dumd=2*fork/v2
+  et=v2+(duma+sqrt(dumb+dumc))/dumd
+  if (et .le. 0.) et=0.
+  cape(3,tt)=et*cape(1,tt)
+endif
+
+
+744 continue
+deallocate(t0,q0,p0,z0,h0,hs0,h0h,ht,buoc)
+
+
+
+do k=1,nz
+  tm(k,tt) = thm(k)*pibar(k)
+  dum1 = qv_sat(thm(k)*pibar(k),pbar(k),0)
+  rh(k,tt) = qvm(k)/dum1*100.
+
+  !dum1 = 100.
+  !dum2 = thm(k)*pibar(k)
+  !dum3 = qvm(k)
+  !do while (dum1>=5e-2)
+  !  i = 0
+  !  if (dum2<273.15) i = 1
+  !  dum4 = qv_sat(dum2,pbar(k),i) - dum3
+  !  !dum1 = abs(dum4) / dum3
+  !  dum1 = 0.7 * dum4 * 2.5e6 / 1004.5 
+  !  dum2 = dum2 - dum1
+  !  !write(*,*) k, dum1,dum2
+  !enddo
+ 
+  !td is used for the, and p is used for qv !!!
+  tdm(k,tt) = cp*tm(k,tt)+g*zc(k)+xlv*qvm(k)
+  pm(k,tt) = qvm(k)
 
   wsm(k,tt) = sqrt(um(k)**2. + vm(k)**2.)
   dum1 = atan2(um(k),vm(k))/3.14159265*180.
@@ -204,24 +289,28 @@ call mpi_barrier(mpi_comm_world,ierr)
 if (myid==0) then
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,tm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,tdm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
+  call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,rh,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,wsm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,wdm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,pm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
+  call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*3,mpi_real,cape,mpi_n*3,mpi_s*3,mpi_real,0,mpi_comm_world,ierr)
 else
   call mpi_gatherv(tm,mpi_n(myid+1)*nz,mpi_real,tm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(tdm,mpi_n(myid+1)*nz,mpi_real,tdm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
+  call mpi_gatherv(rh,mpi_n(myid+1)*nz,mpi_real,rh,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(wsm,mpi_n(myid+1)*nz,mpi_real,wsm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(wdm,mpi_n(myid+1)*nz,mpi_real,wdm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(pm,mpi_n(myid+1)*nz,mpi_real,pm,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
+  call mpi_gatherv(cape,mpi_n(myid+1)*3,mpi_real,cape,mpi_n*3,mpi_s*3,mpi_real,0,mpi_comm_world,ierr)
 endif
 
 call mpi_barrier(mpi_comm_world,ierr)
 
 
 if (myid==0) then
-  open(10,file=trim(workpath)//"/data/mean_"//trim(run)//".dat",access="direct",recl=nz*5)
+  open(10,file=trim(workpath)//"/data/mean_"//trim(run)//".dat",access="direct",recl=nz*6+3)
   do t=1,nt+1
-    write(10,rec=t) tm(:,t),tdm(:,t),wsm(:,t),wdm(:,t),pm(:,t)
+    write(10,rec=t) tm(:,t),tdm(:,t),rh(:,t),wsm(:,t),wdm(:,t),pm(:,t),cape(:,t)
   enddo
   close(10)
 endif

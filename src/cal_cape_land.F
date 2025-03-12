@@ -192,73 +192,48 @@ enddo
 enddo
 enddo
 
-n=nz-1
-allocate(t0(n),q0(n),p0(n),z0(n),buoc(n))
-t0=thm(2:nz)*pibar(2:nz)
-q0=qvm(2:nz)
-p0=pbar(2:nz)
-z0=zc(2:nz)
-call lift_parcel_adiabatic(nz-1,t0,p0,q0,z0,buoc)
-mlfc=-1
+o=2
 
-do k=1,nz
-  if (buoc(k)>0.) then
-    mlfc=k
-    exit
+n=nz-1
+allocate(t0(n),q0(n),p0(n),z0(n),h0(n),hs0(n),buoc(n))
+t0=thm(o:nz)*pibar(o:nz)
+q0=qvm(o:nz)
+p0=pbar(o:nz)
+z0=zc(o:nz)
+h0=cp*t0+g*z0+xlv*q0
+do k=1,n-1
+  hs0(k)=cp*t0(k)+g*z0(k)+xlv*qsat(t0(k),p0(k),0)
+enddo
+call lift_parcel_adiabatic(nz-topo(i,j),t0,p0,q0,z0,buoc)
+
+lfc=0
+el=n-1
+lfc=findloc(buoc>0.,.True.,dim=1)
+el=findloc(buoc>0.,.True.,dim=1,back=.True.)
+if (lfc==0 .or. el==n-1) goto 744
+
+dum5=0.
+do k=lfc,el-1
+  if (buoc(k)>0. .and. buoc(k+1)>0.) then
+    dum5=dum5+0.5*(buoc(k+1)+buoc(k))*(z0(k+1)-z0(k))
   endif
 enddo
-deallocate(t0,q0,p0,z0,buoc)
-
-!write(*,*) "LFC=",lfc,zc(lfc)
 
 !! CAPE
 do j=1,ny
 do i=1,nx
-  if (lu(i,j)==16 .or. topo(i,j)>=mlfc ) goto 756
+  if (lu(i,j)==16) goto 756
+  cape(i,j,tt)=dum5
   
-  !m=minloc(abs(zc-zz(topo(i,j))-1000.),1)
-  !o=maxloc(the(i,j,topo(i,j)+1:m),1)  
-  
-  o=topo(i,j)+1
-
-  n=nz-topo(i,j)
-  allocate(t0(n),q0(n),p0(n),z0(n),h0(n),hs0(n),h0h(n),ht(n),buoc(n))
-  t0=thm(o:nz)*pibar(o:nz)
-  q0=qvm(o:nz)
-  p0=pbar(o:nz)
-  z0=zc(o:nz)
-  h0=cp*t0+g*z0+xlv*q0
-  do k=1,n-1
-    hs0(k)=cp*t0(k)+g*z0(k)+xlv*qsat(t0(k),p0(k),0)
-  enddo
-
-  ! replace with local parcel
-  t0(1)=th(i,j,o)*pibar(o)
-  q0(1)=qv(i,j,o)
-  call lift_parcel_adiabatic(nz-topo(i,j),t0,p0,q0,z0,buoc)
- 
-  lfc=0
-  el=n-1
-  lfc=findloc(buoc>0.,.True.,dim=1)
-  el=findloc(buoc>0.,.True.,dim=1,back=.True.)
-  if (lfc==0 .or. el==n-1) goto 744
-
-  dum1=0.
-  do k=lfc,el-1
-    if (buoc(k)>0. .and. buoc(k+1)>0.) then
-      dum1=dum1+0.5*(buoc(k+1)+buoc(k))*(z0(k+1)-z0(k))
-    endif
-  enddo  
-  cape(i,j,tt)=dum1
-
-
   if (cape(i,j,tt)>0.) then
+    allocate(h0h(n),ht(n))
     dum1=0.5*( u(i-1,j,max(topo(i-1,j),topo(i,j))+1) &
               +u(i,j,max(topo(i,j),topo(i+1,j))+1) )
     dum2=0.5*( v(i,j-1,max(topo(i,j-1),topo(i,j))+1) &
               +v(i,j,max(topo(i,j),topo(i,j+1))+1) )
     
-    vsr=0.5*sqrt((um(46)-dum1)**2.+(vm(46)-dum2)**2)
+    vsr=0.5*sqrt((0.5*(u(i,j)+u(i-1,j))-dum1)**2. &
+                +(0.5*(v(i,j)+v(i,j-1))-dum2)**2)
   
     h0h=0.
     do k=lfc,el
@@ -294,10 +269,12 @@ do i=1,nx
   endif
 
   744 continue
-  deallocate(t0,q0,p0,z0,h0,hs0,h0h,ht,buoc)
+  deallocate(h0h,ht)
   756 continue
 enddo
 enddo
+
+deallocate(t0,q0,p0,z0,h0,hs0,buoc)
 
 write(*,*) t
 enddo

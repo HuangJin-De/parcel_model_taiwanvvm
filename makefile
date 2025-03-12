@@ -33,19 +33,19 @@ VPATH = ./
 #cal_cape.o: cal_cape.f
 
 
-LIST = cal_mean.f cal_cape.f
-a.out: cal_mean.o cal_cape.o
-cal_mean.o: cal_mean.f cal_cape.o
-cal_cape.o: cal_cape.f
+#LIST = cal_mean.f cal_cape.f
+#a.out: cal_mean.o cal_cape.o
+#cal_mean.o: cal_mean.f cal_cape.o
+#cal_cape.o: cal_cape.f
 
 #LIST = cal_wpdf.f
 #a.out: cal_wpdf.o
 #cal_mean.o: cal_wpdf.f
 
-#LIST = cal_cape.f cal_cape_land.f
-#a.out: cal_cape_land.o cal_cape.o
-#cal_mean_land.o: cal_cape_land.f cal_cape.o
-#cal_cape.o: cal_cape.f
+LIST = cal_cape.f cal_cape_land.f
+a.out: cal_cape_land.o cal_cape.o
+cal_mean_land.o: cal_cape_land.f cal_cape.o
+cal_cape.o: cal_cape.f
 
 LIST_o = $(LIST:.f=.o)
 target = a.out 

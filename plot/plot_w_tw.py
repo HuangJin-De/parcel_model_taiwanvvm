@@ -34,7 +34,9 @@ for casename in caselist:
   fname2=path+'/data/cape_land_'+casename+'.dat'
   fname3=path+'/data/mean_'+casename+'.dat'
 
-  w_vvm=np.fromfile(fname1,dtype=np.float32)[1:]
+  w_vvm=np.fromfile(fname1,dtype=np.float32)[1:].reshape(-1,2)
+  w_vvm_time=w_vvm[:,1]
+  w_vvm=w_vvm[:,0]
   w_cape=np.fromfile(fname2,dtype=np.float32,count=(te-ts)*3*ny*nx,offset=ts*3*ny*nx*4).reshape(-1,3,ny,nx)[:,2,:,:].flatten()
   
   w_cape=np.compress(w_cape>=0.,w_cape)
@@ -60,12 +62,12 @@ for casename in caselist:
   wd_mid[n]=pro[4,46]
  
   if np.abs(w_vvm_m[n]-w_cape_m[n])<2:
-    print(casename,w_vvm_m[n],w_cape_m[n],w_vvm_m[n]-w_cape_m[n],cape[n]
-        ,ecape[n],rh_mid[n],hm_sur[n],ws_mid[n],wd_mid[n])
-  
+    print(casename,w_vvm_m[n],w_cape_m[n],w_vvm_m[n]-w_cape_m[n],ecape[n]) 
   
   n=n+1 
 
+
+exit()
 
 # plot
 fig,ax=plt.subplots(nrows=1,ncols=1,figsize=(3,3),dpi=300)

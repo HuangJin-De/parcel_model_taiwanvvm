@@ -76,9 +76,9 @@ for casename in caselist:
 #print(w_vvm_r,w_cape_r)
 
 fig,ax=plt.subplots(nrows=1,ncols=1,figsize=(4,4),dpi=300)
-markers,caps,bars=ax.errorbar(w_vvm_m,w_cape_m,yerr=w_cape_r,fmt='bo',alpha=0.9,markersize=0.5,ecolor='c',elinewidth=0.5)
+markers,caps,bars=ax.errorbar(w_vvm_m,w_cape_m,yerr=w_cape_r,fmt='bo',alpha=0.9,markersize=1,ecolor='c',elinewidth=0.5)
 ax.plot(np.arange(-0,60,10),np.arange(-0,60,10),'k-',lw=1)
-im=ax.scatter(vvm_w,w_cape_m*np.ones(vvm_w.shape),s=0.08,alpha=0.6,c=vvm_w_time,vmax=24,vmin=8,cmap='jet',edgecolors=None,linewidths=0.)
+im=ax.scatter(vvm_w,w_cape_m*np.ones(vvm_w.shape),s=0.1,alpha=0.6,c=vvm_w_time,vmax=24,vmin=8,cmap='jet',edgecolors=None,linewidths=0.)
 
 cbar=fig.colorbar(im)
 cbar.set_ticks(np.arange(0,24.1,3))
@@ -94,8 +94,8 @@ ax.set_xlabel('W in VVM [m/s]',fontsize=8)
 ax.set_ylabel('W from CAPE [m/s]',fontsize=8)
 ax.tick_params(labelsize=5)
 
-plt.show()
-
+#plt.show()
+plt.savefig('./figure/w_cape_occ_time.png')
 
 exit()
 

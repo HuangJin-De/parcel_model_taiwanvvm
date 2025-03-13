@@ -20,7 +20,6 @@ real :: dum1,dum2,dum3,dum4,dum5
 real, dimension(nx,ny,nz) :: th,qv,the,u,v
 real, dimension(nz) :: thm,qvm,um,vm,np
 real*4, dimension(:,:,:), allocatable :: cape,ecape1,ecape2
-real*4, dimension(:,:), allocatable :: bpro
 real, dimension(nz+1) :: zz,zc,rho,rhoz,thbar,thvbar,pbar,pibar,q1,q2
 real, dimension(nz) :: dz
 real, dimension(:), allocatable :: t0,q0,p0,z0,h0,hs0,h0h,ht,buoc
@@ -60,9 +59,9 @@ call mpi_allgather(idum2,1,mpi_int,mpi_n,1,mpi_int,mpi_comm_world,ierr)
 call mpi_allgather(ts,1,mpi_int,mpi_s,1,mpi_int,mpi_comm_world,ierr)
 
 if (myid==0) then
-  allocate(cape(nx,ny,nt+1),ecape1(nx,ny,nt+1),ecape2(nx,ny,nt+1),bpro(nz,nt+1))
+  allocate(cape(nx,ny,nt+1),ecape1(nx,ny,nt+1),ecape2(nx,ny,nt+1))
 else
-  allocate(cape(nx,ny,mpi_n(myid+1)),ecape1(nx,ny,mpi_n(myid+1)),ecape2(nx,ny,mpi_n(myid+1)),bpro(nz,mpi_n(myid+1)))
+  allocate(cape(nx,ny,mpi_n(myid+1)),ecape1(nx,ny,mpi_n(myid+1)),ecape2(nx,ny,mpi_n(myid+1)))
 endif
 
 !write(*,*) myid, ts, te, idum2
@@ -107,7 +106,6 @@ call mpi_barrier(mpi_comm_world,ierr)
 cape=-999.
 ecape1=-999.
 ecape2=-999.
-bpro=-999.
 
 do t=ts,te
   
@@ -194,50 +192,73 @@ enddo
 enddo
 enddo
 
-o=2
-
 n=nz-1
-allocate(t0(n),q0(n),p0(n),z0(n),h0(n),hs0(n),buoc(n))
-t0=thm(o:nz)*pibar(o:nz)
-q0=qvm(o:nz)
-p0=pbar(o:nz)
-z0=zc(o:nz)
-h0=cp*t0+g*z0+xlv*q0
-do k=1,n-1
-  hs0(k)=cp*t0(k)+g*z0(k)+xlv*qsat(t0(k),p0(k),0)
-enddo
-call lift_parcel_adiabatic(nz-topo(i,j),t0,p0,q0,z0,buoc)
+allocate(t0(n),q0(n),p0(n),z0(n),buoc(n))
+t0=thm(2:nz)*pibar(2:nz)
+q0=qvm(2:nz)
+p0=pbar(2:nz)
+z0=zc(2:nz)
+call lift_parcel_adiabatic(nz-1,t0,p0,q0,z0,buoc)
+mlfc=-1
 
-lfc=0
-el=n-1
-lfc=findloc(buoc>0.,.True.,dim=1)
-el=findloc(buoc>0.,.True.,dim=1,back=.True.)
-if (lfc==0 .or. el==n-1) goto 744
-
-dum5=0.
-do k=lfc,el-1
-  if (buoc(k)>0. .and. buoc(k+1)>0.) then
-    dum5=dum5+0.5*(buoc(k+1)+buoc(k))*(z0(k+1)-z0(k))
+do k=1,nz
+  if (buoc(k)>0.) then
+    mlfc=k
+    exit
   endif
 enddo
+deallocate(t0,q0,p0,z0,buoc)
 
-bpro(o:nz,tt)=buoc
+!write(*,*) "LFC=",lfc,zc(lfc)
 
 !! CAPE
 do j=1,ny
 do i=1,nx
-  if (lu(i,j)==16) goto 756
-  cape(i,j,tt)=dum5
+  if (lu(i,j)==16 .or. topo(i,j)>=mlfc ) goto 756
   
+  !m=minloc(abs(zc-zz(topo(i,j))-1000.),1)
+  !o=maxloc(the(i,j,topo(i,j)+1:m),1)  
+  
+  o=topo(i,j)+1
+
+  n=nz-topo(i,j)
+  allocate(t0(n),q0(n),p0(n),z0(n),h0(n),hs0(n),h0h(n),ht(n),buoc(n))
+  t0=thm(o:nz)*pibar(o:nz)
+  q0=qvm(o:nz)
+  p0=pbar(o:nz)
+  z0=zc(o:nz)
+  h0=cp*t0+g*z0+xlv*q0
+  do k=1,n-1
+    hs0(k)=cp*t0(k)+g*z0(k)+xlv*qsat(t0(k),p0(k),0)
+  enddo
+
+  ! replace with local parcel
+  t0(1)=th(i,j,o)*pibar(o)
+  q0(1)=qv(i,j,o)
+  call lift_parcel_adiabatic(nz-topo(i,j),t0,p0,q0,z0,buoc)
+ 
+  lfc=0
+  el=n-1
+  lfc=findloc(buoc>0.,.True.,dim=1)
+  el=findloc(buoc>0.,.True.,dim=1,back=.True.)
+  if (lfc==0 .or. el==n-1) goto 744
+
+  dum1=0.
+  do k=lfc,el-1
+    if (buoc(k)>0. .and. buoc(k+1)>0.) then
+      dum1=dum1+0.5*(buoc(k+1)+buoc(k))*(z0(k+1)-z0(k))
+    endif
+  enddo  
+  cape(i,j,tt)=dum1
+
+
   if (cape(i,j,tt)>0.) then
-    allocate(h0h(n),ht(n))
     dum1=0.5*( u(i-1,j,max(topo(i-1,j),topo(i,j))+1) &
               +u(i,j,max(topo(i,j),topo(i+1,j))+1) )
     dum2=0.5*( v(i,j-1,max(topo(i,j-1),topo(i,j))+1) &
               +v(i,j,max(topo(i,j),topo(i,j+1))+1) )
     
-    vsr=0.5*sqrt((0.5*(u(i,j,46)+u(i-1,j,46))-dum1)**2. &
-                +(0.5*(v(i,j,46)+v(i,j-1,46))-dum2)**2)
+    vsr=0.5*sqrt((um(46)-dum1)**2.+(vm(46)-dum2)**2)
   
     h0h=0.
     do k=lfc,el
@@ -270,17 +291,13 @@ do i=1,nx
     et=v2+(duma+sqrt(dumb+dumc))/dumd
     if (et .le. 0.) et=0.
     ecape2(i,j,tt)=et*cape(i,j,tt)
-
-    deallocate(h0h,ht)
   endif
 
+  744 continue
+  deallocate(t0,q0,p0,z0,h0,hs0,h0h,ht,buoc)
   756 continue
 enddo
 enddo
-
-744 continue
-
-deallocate(t0,q0,p0,z0,h0,hs0,buoc)
 
 write(*,*) t
 enddo
@@ -288,12 +305,10 @@ enddo
 call mpi_barrier(mpi_comm_world,ierr)
 
 if (myid==0) then
-  call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,bpro,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nx*ny,mpi_real,cape,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nx*ny,mpi_real,ecape1,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nx*ny,mpi_real,ecape2,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
 else
-  call mpi_gatherv(bpro,mpi_n(myid+1)*nz,mpi_real,bpro,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(cape,mpi_n(myid+1)*nx*ny,mpi_real,cape,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(ecape1,mpi_n(myid+1)*nx*ny,mpi_real,ecape1,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(ecape1,mpi_n(myid+1)*nx*ny,mpi_real,ecape2,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
@@ -303,15 +318,9 @@ call mpi_barrier(mpi_comm_world,ierr)
 
 
 if (myid==0) then
-  open(10,file=trim(workpath)//"/data/cape_land_"//trim(run)//".dat",access="direct",recl=nx*ny*3)
+  open(10,file=trim(workpath)//"/data/old_cape_land_"//trim(run)//".dat",access="direct",recl=nx*ny*3)
   do t=1,nt+1
     write(10,rec=t) cape(:,:,t),ecape1(:,:,t),ecape2(:,:,t)
-  enddo
-  close(10)
- 
-  open(10,file=trim(workpath)//"/data/bpro_"//trim(run)//".dat",access="direct",recl=nz)
-  do t=1,nt+1
-    write(10,rec=t) bpro(:,t)
   enddo
   close(10)
 endif

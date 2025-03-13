@@ -4,7 +4,7 @@ use mpi
 use cal_cape
 implicit none
 
-integer, parameter :: nx=1024,ny=1024,nz=70,nt=144
+integer, parameter :: nx=1024,ny=1024,nz=70,nt=72
 real, parameter :: Lv=2.5e6
 integer :: i,j,k,m,n,o,t
 integer :: ierr, ncid1, varid1
@@ -20,6 +20,7 @@ real :: dum1,dum2,dum3,dum4,dum5
 real, dimension(nx,ny,nz) :: th,qv,the,u,v
 real, dimension(nz) :: thm,qvm,um,vm,np
 real*4, dimension(:,:,:), allocatable :: cape,ecape1,ecape2
+real*4, dimension(:,:), allocatable :: bpro
 real, dimension(nz+1) :: zz,zc,rho,rhoz,thbar,thvbar,pbar,pibar,q1,q2
 real, dimension(nz) :: dz
 real, dimension(:), allocatable :: t0,q0,p0,z0,h0,hs0,h0h,ht,buoc
@@ -59,9 +60,9 @@ call mpi_allgather(idum2,1,mpi_int,mpi_n,1,mpi_int,mpi_comm_world,ierr)
 call mpi_allgather(ts,1,mpi_int,mpi_s,1,mpi_int,mpi_comm_world,ierr)
 
 if (myid==0) then
-  allocate(cape(nx,ny,nt+1),ecape1(nx,ny,nt+1),ecape2(nx,ny,nt+1))
+  allocate(cape(nx,ny,nt+1),ecape1(nx,ny,nt+1),ecape2(nx,ny,nt+1),bpro(nz,nt+1))
 else
-  allocate(cape(nx,ny,mpi_n(myid+1)),ecape1(nx,ny,mpi_n(myid+1)),ecape2(nx,ny,mpi_n(myid+1)))
+  allocate(cape(nx,ny,mpi_n(myid+1)),ecape1(nx,ny,mpi_n(myid+1)),ecape2(nx,ny,mpi_n(myid+1)),bpro(nz,mpi_n(myid+1)))
 endif
 
 !write(*,*) myid, ts, te, idum2
@@ -106,6 +107,7 @@ call mpi_barrier(mpi_comm_world,ierr)
 cape=-999.
 ecape1=-999.
 ecape2=-999.
+bpro=-999.
 
 do t=ts,te
   
@@ -219,6 +221,8 @@ do k=lfc,el-1
   endif
 enddo
 
+bpro(o:nz,tt)=buoc
+
 !! CAPE
 do j=1,ny
 do i=1,nx
@@ -232,8 +236,8 @@ do i=1,nx
     dum2=0.5*( v(i,j-1,max(topo(i,j-1),topo(i,j))+1) &
               +v(i,j,max(topo(i,j),topo(i,j+1))+1) )
     
-    vsr=0.5*sqrt((0.5*(u(i,j)+u(i-1,j))-dum1)**2. &
-                +(0.5*(v(i,j)+v(i,j-1))-dum2)**2)
+    vsr=0.5*sqrt((0.5*(u(i,j,46)+u(i-1,j,46))-dum1)**2. &
+                +(0.5*(v(i,j,46)+v(i,j-1,46))-dum2)**2)
   
     h0h=0.
     do k=lfc,el
@@ -266,13 +270,15 @@ do i=1,nx
     et=v2+(duma+sqrt(dumb+dumc))/dumd
     if (et .le. 0.) et=0.
     ecape2(i,j,tt)=et*cape(i,j,tt)
+
+    deallocate(h0h,ht)
   endif
 
-  744 continue
-  deallocate(h0h,ht)
   756 continue
 enddo
 enddo
+
+744 continue
 
 deallocate(t0,q0,p0,z0,h0,hs0,buoc)
 
@@ -282,10 +288,12 @@ enddo
 call mpi_barrier(mpi_comm_world,ierr)
 
 if (myid==0) then
+  call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nz,mpi_real,bpro,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nx*ny,mpi_real,cape,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nx*ny,mpi_real,ecape1,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(mpi_in_place,mpi_n(myid+1)*nx*ny,mpi_real,ecape2,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
 else
+  call mpi_gatherv(bpro,mpi_n(myid+1)*nz,mpi_real,bpro,mpi_n*nz,mpi_s*nz,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(cape,mpi_n(myid+1)*nx*ny,mpi_real,cape,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(ecape1,mpi_n(myid+1)*nx*ny,mpi_real,ecape1,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
   call mpi_gatherv(ecape1,mpi_n(myid+1)*nx*ny,mpi_real,ecape2,mpi_n*nx*ny,mpi_s*nx*ny,mpi_real,0,mpi_comm_world,ierr)
@@ -298,6 +306,12 @@ if (myid==0) then
   open(10,file=trim(workpath)//"/data/cape_land_"//trim(run)//".dat",access="direct",recl=nx*ny*3)
   do t=1,nt+1
     write(10,rec=t) cape(:,:,t),ecape1(:,:,t),ecape2(:,:,t)
+  enddo
+  close(10)
+ 
+  open(10,file=trim(workpath)//"/data/bpro_"//trim(run)//".dat",access="direct",recl=nz)
+  do t=1,nt+1
+    write(10,rec=t) bpro(:,t)
   enddo
   close(10)
 endif

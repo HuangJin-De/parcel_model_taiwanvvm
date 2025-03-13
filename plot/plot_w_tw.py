@@ -13,7 +13,7 @@ te=54  # 9 LST
 path='/data/der0318/parcel_model_taiwanvvm/'
 caselist=os.listdir(path+'/taiwanVVM/')
 #caselist=['tpe20050702nor']
-#caselist=['tpe20050702nor','tpe20050712nor','tpe20050723nor','tpe20050826nor','tpe20060508nor']
+caselist=['tpe20050702nor','tpe20050712nor','tpe20050723nor','tpe20050826nor','tpe20060508nor']
 ncase=len(caselist)
 print(ncase)
 
@@ -45,10 +45,12 @@ for casename in caselist:
   #print(w_vvm.shape,w_cape.shape)
  
   w_vvm_m[n]=w_vvm.mean()
-  w_vvm_r[:,n]=[np.percentile(w_vvm,25),np.percentile(w_vvm,75)]
+  w_vvm_r[:,n]=np.abs([np.percentile(w_vvm,25),np.percentile(w_vvm,75)]-w_vvm_m[n])
+  #w_vvm_r[:,n]=[np.percentile(w_vvm,25),np.percentile(w_vvm,75)]
 
   w_cape_m[n]=w_cape.mean()
-  w_cape_r[:,n]=[np.percentile(w_cape,25),np.percentile(w_cape,75)]
+  w_cape_r[:,n]=np.abs([np.percentile(w_cape,25),np.percentile(w_cape,75)]-w_cape_m[n])
+  #w_cape_r[:,n]=[np.percentile(w_cape,25),np.percentile(w_cape,75)]
 
   # env vars
   env=np.fromfile(fname3,dtype=np.float32,count=(nz*6+3),offset=ts*(nz*6+3)*4)
@@ -65,6 +67,29 @@ for casename in caselist:
     print(casename,w_vvm_m[n],w_cape_m[n],w_vvm_m[n]-w_cape_m[n],ecape[n]) 
   
   n=n+1 
+
+
+#print(w_vvm_r,w_cape_r)
+
+fig,ax=plt.subplots(nrows=1,ncols=1,figsize=(3,3),dpi=300)
+markers,caps,bars=ax.errorbar(w_vvm_m,w_cape_m,xerr=w_vvm_r,yerr=w_cape_r,fmt='bo',alpha=0.9,markersize=0.5,ecolor='c',elinewidth=0.5)
+ax.plot(np.arange(-0,40,10),np.arange(-0,40,10),'k-',lw=1)
+#im=ax.scatter(w_vvm_m,w_cape_m,s=8,c=rh_mid,vmax=80,vmin=10,cmap='turbo',edgecolors='gray',linewidths=0.3)
+
+#fig.colorbar(im)
+
+[bar.set_alpha(0.3) for bar in bars]
+[cap.set_alpha(0.3) for cap in caps]
+
+#ax.set_xlim([-0,25])
+#ax.set_ylim([-0,40])
+#ax.set_xticks(np.arange(-0,25.1,5))
+#ax.set_yticks(np.arange(-0,40.1,5))
+ax.set_xlabel('W in VVM [m/s]',fontsize=6)
+ax.set_ylabel('W from CAPE [m/s]',fontsize=6)
+ax.tick_params(labelsize=5)
+
+plt.show()
 
 
 exit()

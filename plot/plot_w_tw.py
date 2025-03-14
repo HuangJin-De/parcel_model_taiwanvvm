@@ -82,10 +82,10 @@ for casename in caselist:
 fig,ax=plt.subplots(nrows=1,ncols=1,figsize=(4,4),dpi=300)
 markers,caps,bars=ax.errorbar(w_vvm_m,w_cape_m,yerr=w_cape_r,fmt='bo',alpha=0.9,markersize=1,ecolor='c',elinewidth=0.5)
 ax.plot(np.arange(-0,60,10),np.arange(-0,60,10),'k-',lw=1)
-im=ax.scatter(vvm_w,w_cape_m*np.ones(vvm_w.shape),s=0.1,alpha=0.6,c=vvm_w_prec,vmax=50,vmin=0,cmap='jet',edgecolors=None,linewidths=0.)
+im=ax.scatter(vvm_w,w_cape_m*np.ones(vvm_w.shape),s=0.1,alpha=0.6,c=np.log10(vvm_w_size),vmax=3,vmin=1,cmap='jet',edgecolors=None,linewidths=0.)
 
 cbar=fig.colorbar(im)
-cbar.set_ticks(np.arange(0,50.1,5))
+cbar.set_ticks(np.arange(1,3+.1,0.2))
 
 [bar.set_alpha(0.2) for bar in bars]
 [cap.set_alpha(0.2) for cap in caps]
@@ -98,8 +98,8 @@ ax.set_xlabel('W in VVM [m/s]',fontsize=8)
 ax.set_ylabel('W from CAPE [m/s]',fontsize=8)
 ax.tick_params(labelsize=5)
 
-plt.show()
-plt.savefig('./figure/w_cape_obj_maxprec.png')
+#plt.show()
+plt.savefig('./figure/w_cape_obj_size.png')
 
 exit()
 

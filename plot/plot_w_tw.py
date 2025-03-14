@@ -23,6 +23,8 @@ w_vvm_r=np.zeros([2,ncase])
 w_cape_r=np.zeros([2,ncase])
 vvm_w=np.zeros([10000,ncase])
 vvm_w_time=np.zeros([10000,ncase])
+vvm_w_size=np.zeros([10000,ncase])
+vvm_w_prec=np.zeros([10000,ncase])
 cape=np.zeros(ncase)
 ecape=np.zeros(ncase)
 rh_mid=np.zeros(ncase)
@@ -36,10 +38,12 @@ for casename in caselist:
   fname2=path+'/data/old_cape_land_'+casename+'.dat'
   fname3=path+'/data/mean_'+casename+'.dat'
 
-  w_vvm=np.fromfile(fname1,dtype=np.float32)[1:].reshape(-1,2)
+  w_vvm=np.fromfile(fname1,dtype=np.float32)[1:].reshape(-1,4)
   nw=w_vvm.shape[0]
   vvm_w[0:nw,n]=w_vvm[:,0]
   vvm_w_time[0:nw,n]=w_vvm[:,1]/6.
+  vvm_w_size[0:nw,n]=w_vvm[:,2]
+  vvm_w_prec[0:nw,n]=w_vvm[:,3]
   w_vvm=w_vvm[:,0]
   w_cape=np.fromfile(fname2,dtype=np.float32,count=(te-ts)*3*ny*nx,offset=ts*3*ny*nx*4).reshape(-1,3,ny,nx)[:,2,:,:].flatten()
   
@@ -78,10 +82,10 @@ for casename in caselist:
 fig,ax=plt.subplots(nrows=1,ncols=1,figsize=(4,4),dpi=300)
 markers,caps,bars=ax.errorbar(w_vvm_m,w_cape_m,yerr=w_cape_r,fmt='bo',alpha=0.9,markersize=1,ecolor='c',elinewidth=0.5)
 ax.plot(np.arange(-0,60,10),np.arange(-0,60,10),'k-',lw=1)
-im=ax.scatter(vvm_w,w_cape_m*np.ones(vvm_w.shape),s=0.1,alpha=0.6,c=vvm_w_time,vmax=24,vmin=8,cmap='jet',edgecolors=None,linewidths=0.)
+im=ax.scatter(vvm_w,w_cape_m*np.ones(vvm_w.shape),s=0.1,alpha=0.6,c=vvm_w_prec,vmax=50,vmin=0,cmap='jet',edgecolors=None,linewidths=0.)
 
 cbar=fig.colorbar(im)
-cbar.set_ticks(np.arange(0,24.1,3))
+cbar.set_ticks(np.arange(0,50.1,5))
 
 [bar.set_alpha(0.2) for bar in bars]
 [cap.set_alpha(0.2) for cap in caps]
@@ -94,8 +98,8 @@ ax.set_xlabel('W in VVM [m/s]',fontsize=8)
 ax.set_ylabel('W from CAPE [m/s]',fontsize=8)
 ax.tick_params(labelsize=5)
 
-#plt.show()
-plt.savefig('./figure/w_cape_occ_time.png')
+plt.show()
+plt.savefig('./figure/w_cape_obj_maxprec.png')
 
 exit()
 

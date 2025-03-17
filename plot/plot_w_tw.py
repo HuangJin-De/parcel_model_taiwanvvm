@@ -39,6 +39,7 @@ for casename in caselist:
   fname3=path+'/data/mean_'+casename+'.dat'
 
   w_vvm=np.fromfile(fname1,dtype=np.float32)[1:].reshape(-1,4)
+  w_vvm=w_vvm[w_vvm[:,3]>10.,:]
   nw=w_vvm.shape[0]
   vvm_w[0:nw,n]=w_vvm[:,0]
   vvm_w_time[0:nw,n]=w_vvm[:,1]/6.

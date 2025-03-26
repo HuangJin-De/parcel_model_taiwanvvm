@@ -108,6 +108,8 @@ ecape1=-999.
 ecape2=-999.
 
 do t=ts,te
+
+if ((t>60) .or. ((t>6) .and. (t<48))) goto 234
   
 tt=t-ts+1
 
@@ -258,7 +260,7 @@ do i=1,nx
     dum2=0.5*( v(i,j-1,max(topo(i,j-1),topo(i,j))+1) &
               +v(i,j,max(topo(i,j),topo(i,j+1))+1) )
     
-    vsr=0.5*sqrt((um(46)-dum1)**2.+(vm(46)-dum2)**2)
+    vsr=0.5*sqrt((um(52)-dum1)**2.+(vm(52)-dum2)**2)
   
     h0h=0.
     do k=lfc,el
@@ -299,6 +301,7 @@ do i=1,nx
 enddo
 enddo
 
+234 continue
 write(*,*) t
 enddo
 

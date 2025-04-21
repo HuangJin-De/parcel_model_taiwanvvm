@@ -13,6 +13,12 @@ do
   cp template/mean.ctl gs_ctl/mean_$fname.ctl
   sed -i 's/runname/'$fname'/g' gs_ctl/mean_$fname.ctl
 
+  cp template/cape_temp.ctl gs_ctl/cape_$fname.ctl
+  sed -i 's/runname/'$fname'/g' gs_ctl/cape_$fname.ctl
+
+  cp template/buoc_temp.ctl gs_ctl/buoc_$fname.ctl
+  sed -i 's/runname/'$fname'/g' gs_ctl/buoc_$fname.ctl
+
   #cp template/wpdf.ctl gs_ctl/wpdf_$fname.ctl
   #sed -i 's/runname/'$fname'/g' gs_ctl/wpdf_$fname.ctl
 done

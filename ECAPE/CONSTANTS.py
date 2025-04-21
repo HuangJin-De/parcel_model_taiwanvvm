@@ -1,0 +1,13 @@
+Rd=287.04#%dry gas constant
+Rv=461.5 #water vapor gas constant
+epsilon=Rd/Rv
+cp=1005 #specific heat of dry air at constant pressure
+g=9.81 #gravitational acceleration
+xlv=2501000 #reference latent heat of vaporization at the triple point temperature
+xls=2834000 #reference latent heat of sublimation at the triple point temperature
+cpv=1870 #specific heat of water vapor at constant pressure
+cpl=4190 #specific heat of liquid water
+cpi=2106 #specific heat of ice
+ttrip=273.15; #triple point temperature
+eref=611.2 #reference pressure at the triple point temperature
+pi = 3.1415926535

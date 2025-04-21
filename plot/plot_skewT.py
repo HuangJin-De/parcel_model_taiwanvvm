@@ -10,7 +10,7 @@ nt=145
 
 path='/data/der0318/parcel_model_taiwanvvm/'
 #caselist=os.listdir(path+'/taiwanVVM/')
-caselist=['tpe20110816nor']
+caselist=['tpe20140525nor']
 
 for casename in caselist:
   filename=path+'/data/mean_'+casename+'.dat'

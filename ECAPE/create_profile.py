@@ -196,20 +196,20 @@ for casename in caselist:
   T_lif_warm,Qv_lif_warm,Qt_lif_warm,_=lift_parcel_adiabatic(T_fine_warm,P_fine_warm,Q_fine_warm,0,0,0,Z_fine,T1,T2)
   
   B_lif_warm=np.copy(B_lif_fine)
-  Z_warm=(Z_fine[inds_FT[0]]-Z_fine[inds_FT[0][0]])/(Z_fine[inds_FT[0][-1]]-Z_fine[inds_FT[0][0]]) # normalized between lcl and el
-  Z_warm=Z_warm*np.exp(0.09)
-  B_warm=interpolate.interp1d(Z_warm,B_lif_fine[inds_FT[0]],fill_value="extrapolate",kind="linear")
-  B_lif_warm=B_warm((Z_fine-Z_fine[inds_FT[0][0]])/(Z_fine[inds_FT[0][-1]]-Z_fine[inds_FT[0][0]]))
-  bbb = np.where(B_lif_warm>0)[0]
-  Z_fine_TR = Z_fine[np.max(bbb)]
-  inds_ST = np.where(Z_fine>Z_fine_TR )
-  inds_FT = np.where( np.logical_and(Z_fine>Z_mix_BL,Z_fine<=Z_fine_TR) )
+  #Z_warm=(Z_fine[inds_FT[0]]-Z_fine[inds_FT[0][0]])/(Z_fine[inds_FT[0][-1]]-Z_fine[inds_FT[0][0]]) # normalized between lcl and el
+  #Z_warm=Z_warm*np.exp(0.18)
+  #B_warm=interpolate.interp1d(Z_warm,B_lif_fine[inds_FT[0]],fill_value="extrapolate",kind="linear")
+  #B_lif_warm=B_warm((Z_fine-Z_fine[inds_FT[0][0]])/(Z_fine[inds_FT[0][-1]]-Z_fine[inds_FT[0][0]]))
+  #bbb = np.where(B_lif_warm>0)[0]
+  #Z_fine_TR = Z_fine[np.max(bbb)]
+  #inds_ST = np.where(Z_fine>Z_fine_TR )
+  #inds_FT = np.where( np.logical_and(Z_fine>Z_mix_BL,Z_fine<=Z_fine_TR) )
   for iz in inds_FT[0]:
   
-      #if B_lif_fine[iz]>0:
-      #    B_lif_warm[iz]=B_lif_fine[iz]*np.exp(0.18)
-      if B_lif_warm[iz]>0:
-          B_lif_warm[iz]=B_lif_warm[iz]*np.exp(0.09)
+      if B_lif_fine[iz]>0:
+          B_lif_warm[iz]=B_lif_fine[iz]*np.exp(0.18)
+      #if B_lif_warm[iz]>0:
+      #    B_lif_warm[iz]=B_lif_warm[iz]*np.exp(0.09)
   
       qvv=(1-Qt_lif_warm[iz-1])*compute_rsat(T_lif_warm[iz-1],P_fine_warm[iz-1],0,T1,T2)
       qvi=(1-Qt_lif_warm[iz-1])*compute_rsat(T_lif_warm[iz-1],P_fine_warm[iz-1],2,T1,T2)
@@ -311,7 +311,8 @@ for casename in caselist:
   cape_warm,cin_warm,lfc,el=compute_CAPE_AND_CIN(T_fine_warm,P_fine_warm,Q_fine_warm,0,0,0,Z_fine,T1,T2)
   skew.ax.set_title('CAPE={:.0f}, CIN={:.0f} \n CAPE_warm={:.0f},CIN_warm={:.0f}'.format(cape, abs(cin), cape_warm, abs(cin_warm)))
 
-  #plt.savefig("./figure/"+casename+"_skew.png")
-  plt.savefig("./figure/"+casename+"_skew_elup.png")
+  #plt.savefig("../plot/figure/"+casename+"_skew_half.png")
+  #plt.savefig("../plot/figure/"+casename+"_skew_elup.png")
+  plt.savefig("../plot/figure/"+casename+"_skew_bup.png")
   plt.close()
   #plt.show()
